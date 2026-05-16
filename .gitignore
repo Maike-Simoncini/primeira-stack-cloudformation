@@ -1,11 +1,64 @@
-# generated files
-target/
-generated/
+# ==========================================
+# AWS & CloudFormation específicos
+# ==========================================
+# Nunca versionar credenciais locais ou arquivos de configuração da CLI da AWS
+.aws/
+credentials
+config
+*.pem
+*.pkcs12
+*.key
+*.pfx
 
-# dependencies
-Dependencies.toml
+# Arquivos temporários e de saída do CloudFormation (se usar ferramentas auxiliares/CLI)
+.cfn/
+*-cfn-template.json
+*-cfn-template.yaml
 
-# config files
-Config.toml
-# the config files used for testing, Uncomment the following line if you want to commit the test config files
-#!**/tests/Config.toml
+# ==========================================
+# Ambientes Virtuais e Dependências (Python/Node)
+# ==========================================
+# Caso use scripts auxiliares em Python para testar os templates
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.local
+
+# Dependências de Node.js (caso use AWS CDK no futuro)
+node_modules/
+npm-debug.log*
+
+# ==========================================
+# Arquivos do Sistema Operacional
+# ==========================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ==========================================
+# IDEs e Editores de Código
+# ==========================================
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IntelliJ / PyCharm / WebStorm
+.idea/
+*.iws
+*.iml
+*.ipr
