@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'DIO Challenge - Stack completa para provisionamento de Servidor Web Apache com Firewall (EC2 e Security Group)'
+
+Parameters:
+  InstanceTypeParameter:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t3.micro
+    Description: 'Escolha o tipo de instancia EC2 (t2.micro e elegivel para o nível gratuito).'
+
+  KeyNameParameter:
+    Type: String
+    Description: 'Nome do Key Pair existente na sua conta AWS para acesso SSH (Opcional).'
+    Default: ''
+
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
+    Description: 'Busca automaticamente a AMI mais recente do Amazon Linux 2023 na regiao.'
+
+Resources:
+  # 1. CONFIGURAÇÃO DO FIREWALL (SECURITY GROUP)
+  WebServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Permitir acesso HTTP (porta 80) e SSH (porta 22)'
+      SecurityGroupIngress:
+        # Permite tráfego Web vindo de qualquer lugar da internet
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        # Permite acesso SSH para gerência (Em produção, restrinja para o seu IP)
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  # 2. CONFIGURAÇÃO DO SERVIDOR WEB (INSTÂNCIA EC2)
+  WebServerInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceTypeParameter
+      ImageId: !Ref LatestAmiId
+      KeyName: !If [CreateKeyPair, !Ref KeyNameParameter, !Ref 'AWS::NoValue']
+      SecurityGroups:
+        - !Ref WebServerSecurityGroup
+      
+      # Script de Automação: Instalação do Servidor Web Apache
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Atualiza os pacotes do sistema
+          dnf update -y
+          # Instala o servidor web Apache
+          dnf install -y httpd
+          # Inicia o serviço do Apache
+          systemctl start httpd
+          # Configura o Apache para iniciar automaticamente com o sistema
+          systemctl enable httpd
+          # Cria uma página HTML customizada de boas-vindas
+          echo "<h1>Primeira Stack CloudFormation executada com sucesso! 🚀</h1><p>Hospedado na AWS via Infraestrutura como Codigo (IaC).</p>" > /var/www/html/index.html
+
+      Tags:
+        - Key: Name
+          Value: WebServer-DIO-Challenge
+        - Key: Environment
+          Value: Lab-Test
+
+Conditions:
+  # Condição para verificar se o usuário informou uma chave SSH
+  CreateKeyPair: !Not [ !Equals [ !Ref KeyNameParameter, '' ] ]
+
+Outputs:
+  # Exibe a URL pública do servidor web após a criação da stack
+  WebsiteURL:
+    Description: 'URL para acessar o Servidor Web criado'
+    Value: !Sub 'http://${WebServerInstance.PublicDnsName}'
+  
+  PublicIP:
+    Description: 'IP Publico do Servidor'
+    Value: !GetAtt WebServerInstance.PublicIp
